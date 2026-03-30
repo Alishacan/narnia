@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+const PROMPT = `You are a clothing categorization AI. Analyze the clothing item in the image and return a JSON object with these fields:
+- category: one of "tops", "bottoms", "dresses", "outerwear", "shoes", "bags", "accessories", "jewelry", "activewear", "other"
+- subcategory: specific type (e.g., "t-shirt", "jeans", "sneakers", "blazer", "earrings")
+- color: the primary CSS color name or hex code (e.g., "black", "#1a1a2e", "navy")
+- secondary_color: secondary color if the item is multi-colored, otherwise null
+- season: one of "spring", "summer", "fall", "winter", "all-season"
+- occasion: one of "casual", "work", "going-out", "formal", "athletic", "lounge"
+
+Return ONLY the JSON object, no other text.`;
+
+export async function POST(request: NextRequest) {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+
+  try {
+    const { imageBase64 } = await request.json();
+
+    let content: string | null = null;
+
+    // Try Gemini first (cheapest), fall back to OpenAI
+    if (geminiKey) {
+      content = await callGemini(geminiKey, imageBase64);
+    } else if (openaiKey) {
+      content = await callOpenAI(openaiKey, imageBase64);
+    } else {
+      return NextResponse.json({ error: 'No AI API key configured' }, { status: 500 });
+    }
+
+    if (!content) {
+      return NextResponse.json({ error: 'No response from AI' }, { status: 500 });
+    }
+
+    // Parse JSON from the response (handle markdown code blocks)
+    const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const categorization = JSON.parse(jsonStr);
+
+    return NextResponse.json(categorization);
+  } catch (error) {
+    console.error('AI categorization error:', error);
+    return NextResponse.json({ error: 'Failed to categorize item' }, { status: 500 });
+  }
+}
+
+async function callGemini(apiKey: string, imageBase64: string): Promise<string | null> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: PROMPT + '\n\nCategorize this clothing item.' },
+              {
+                inline_data: {
+                  mime_type: 'image/png',
+                  data: imageBase64,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 200,
+        },
+      }),
+    }
+  );
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+}
+
+async function callOpenAI(apiKey: string, imageBase64: string): Promise<string | null> {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: PROMPT },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: { url: `data:image/png;base64,${imageBase64}`, detail: 'low' },
+            },
+            { type: 'text', text: 'Categorize this clothing item.' },
+          ],
+        },
+      ],
+      max_tokens: 200,
+      temperature: 0.1,
+    }),
+  });
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content ?? null;
+}
