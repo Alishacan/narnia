@@ -31,6 +31,7 @@ export interface ClothingItem {
   notes: string | null;
   is_favorite: boolean;
   in_laundry: boolean;
+  is_wishlist: boolean;
   wear_count: number;
   last_worn_at: string | null;
   created_at: string;

@@ -51,8 +51,15 @@ export default function ClothingGrid({ items, loading }: ClothingGridProps) {
             <div className="absolute top-1.5 right-1.5 text-sm">&#x2764;&#xFE0F;</div>
           )}
 
+          {/* Wishlist badge */}
+          {item.is_wishlist && (
+            <div className="absolute top-1.5 left-1.5 bg-narnia-100 text-narnia-600 text-xs px-1.5 py-0.5 rounded-full font-medium">
+              Want
+            </div>
+          )}
+
           {/* Laundry badge */}
-          {item.in_laundry && (
+          {!item.is_wishlist && item.in_laundry && (
             <div className="absolute top-1.5 left-1.5 bg-blue-100 text-blue-600 text-xs px-1.5 py-0.5 rounded-full font-medium">
               Wash
             </div>

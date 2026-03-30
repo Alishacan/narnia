@@ -21,6 +21,7 @@ export default function ClosetPage() {
   const [filterOccasion, setFilterOccasion] = useState<Occasion | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<'newest' | 'most-worn' | 'least-worn'>('newest');
+  const [viewMode, setViewMode] = useState<'owned' | 'wishlist' | 'all'>('owned');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -30,6 +31,13 @@ export default function ClosetPage() {
 
   const filteredItems = useMemo(() => {
     let result = items;
+
+    // Owned vs wishlist filter
+    if (viewMode === 'owned') {
+      result = result.filter((item) => !item.is_wishlist);
+    } else if (viewMode === 'wishlist') {
+      result = result.filter((item) => item.is_wishlist);
+    }
 
     if (activeCategory !== 'all') {
       result = result.filter((item) => item.category === activeCategory);
@@ -53,7 +61,7 @@ export default function ClosetPage() {
     }
 
     return result;
-  }, [items, activeCategory, filterSeason, filterOccasion, sortBy]);
+  }, [items, activeCategory, filterSeason, filterOccasion, sortBy, viewMode]);
 
   if (authLoading) return null;
 
@@ -75,6 +83,25 @@ export default function ClosetPage() {
               </button>
               <span className="text-sm text-gray-400">{filteredItems.length} items</span>
             </div>
+          </div>
+
+          {/* Owned / Wishlist / All toggle */}
+          <div className="flex bg-gray-100 rounded-xl p-1 mt-3">
+            {[
+              { key: 'owned' as const, label: 'My Closet' },
+              { key: 'wishlist' as const, label: 'Wishlist' },
+              { key: 'all' as const, label: 'All' },
+            ].map((v) => (
+              <button
+                key={v.key}
+                onClick={() => setViewMode(v.key)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition ${
+                  viewMode === v.key ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500'
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
           </div>
         </div>
 
