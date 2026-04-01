@@ -3,12 +3,28 @@
 import { ClothingItem } from '@/lib/types';
 import Link from 'next/link';
 
+interface EmptyAction {
+  label: string;
+  href: string;
+}
+
 interface ClothingGridProps {
   items: ClothingItem[];
   loading: boolean;
+  emptyIcon?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: EmptyAction;
 }
 
-export default function ClothingGrid({ items, loading }: ClothingGridProps) {
+export default function ClothingGrid({
+  items,
+  loading,
+  emptyIcon = '👗',
+  emptyTitle = 'No items yet',
+  emptyDescription = 'Tap the + button to add your first clothing item',
+  emptyAction,
+}: ClothingGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-3 gap-2 px-4">
@@ -22,11 +38,17 @@ export default function ClothingGrid({ items, loading }: ClothingGridProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-6">
-        <div className="text-5xl mb-4">&#x1F455;</div>
-        <h3 className="text-lg font-semibold text-gray-700 mb-1">No items yet</h3>
-        <p className="text-gray-400 text-center text-sm">
-          Tap the + button to add your first clothing item
-        </p>
+        <div className="text-5xl mb-4">{emptyIcon}</div>
+        <h3 className="text-lg font-semibold text-gray-700 mb-1">{emptyTitle}</h3>
+        <p className="text-gray-400 text-center text-sm mb-4">{emptyDescription}</p>
+        {emptyAction && (
+          <a
+            href={emptyAction.href}
+            className="px-6 py-2.5 bg-clossie-600 text-white rounded-xl text-sm font-semibold active:scale-95 transition"
+          >
+            {emptyAction.label}
+          </a>
+        )}
       </div>
     );
   }
@@ -53,7 +75,7 @@ export default function ClothingGrid({ items, loading }: ClothingGridProps) {
 
           {/* Wishlist badge */}
           {item.is_wishlist && (
-            <div className="absolute top-1.5 left-1.5 bg-narnia-100 text-narnia-600 text-xs px-1.5 py-0.5 rounded-full font-medium">
+            <div className="absolute top-1.5 left-1.5 bg-clossie-100 text-clossie-600 text-xs px-1.5 py-0.5 rounded-full font-medium">
               Want
             </div>
           )}

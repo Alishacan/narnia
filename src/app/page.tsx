@@ -20,16 +20,16 @@ export default function Home() {
 
   if (!configured) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-narnia-50 to-white">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-clossie-50 to-white">
         <div className="text-center max-w-sm">
           <div className="text-6xl mb-4">&#x1F6AA;</div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Narnia</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Clossie</h1>
           <p className="text-gray-500 mb-8">Your smart closet organizer</p>
 
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left">
             <h3 className="font-semibold text-amber-800 mb-2">Setup Required</h3>
             <p className="text-sm text-amber-700 mb-3">
-              To get Narnia running, you need to connect it to a Supabase database. Here&apos;s what to do:
+              To get Clossie running, you need to connect it to a Supabase database. Here&apos;s what to do:
             </p>
             <ol className="text-sm text-amber-700 space-y-2 list-decimal list-inside">
               <li>Create a free account at <strong>supabase.com</strong></li>
@@ -48,7 +48,7 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <div className="text-5xl mb-3 animate-pulse">&#x1F6AA;</div>
-        <p className="text-gray-400">Opening Narnia...</p>
+        <p className="text-gray-400">Opening Clossie...</p>
       </div>
     </div>
   );

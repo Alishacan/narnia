@@ -22,7 +22,7 @@ const BUILD_CATEGORIES: ClothingCategory[] = [
 
 export default function OutfitBuilderPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-narnia-200 border-t-narnia-600 rounded-full animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-clossie-200 border-t-clossie-600 rounded-full animate-spin" /></div>}>
       <OutfitBuilderContent />
     </Suspense>
   );
@@ -101,7 +101,7 @@ function OutfitBuilderContent() {
           <button
             onClick={handleSave}
             disabled={saving || selectedItems.size === 0}
-            className="px-4 py-1.5 bg-narnia-600 text-white rounded-xl text-sm font-semibold disabled:opacity-40"
+            className="px-4 py-1.5 bg-clossie-600 text-white rounded-xl text-sm font-semibold disabled:opacity-40"
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -147,7 +147,7 @@ function OutfitBuilderContent() {
           <div className="flex gap-2 overflow-x-auto hide-scrollbar py-1">
             {Array.from(selectedItems.values()).map((item) => (
               <div key={item.id} className="relative flex-shrink-0">
-                <div className="w-16 h-16 bg-gray-50 rounded-xl overflow-hidden border-2 border-narnia-400">
+                <div className="w-16 h-16 bg-gray-50 rounded-xl overflow-hidden border-2 border-clossie-400">
                   <img src={item.image_url} alt={item.category} className="w-full h-full object-contain" />
                 </div>
                 <button
@@ -174,9 +174,9 @@ function OutfitBuilderContent() {
               onClick={() => setActiveCategory(cat)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                 activeCategory === cat
-                  ? 'bg-narnia-600 text-white'
+                  ? 'bg-clossie-600 text-white'
                   : hasSelected
-                  ? 'bg-narnia-100 text-narnia-600'
+                  ? 'bg-clossie-100 text-clossie-600'
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
@@ -209,7 +209,7 @@ function OutfitBuilderContent() {
                   key={item.id}
                   onClick={() => toggleItem(item)}
                   className={`aspect-square rounded-xl overflow-hidden border-2 transition ${
-                    isSelected ? 'border-narnia-500 ring-2 ring-narnia-200' : 'border-gray-100'
+                    isSelected ? 'border-clossie-500 ring-2 ring-clossie-200' : 'border-gray-100'
                   }`}
                 >
                   <img src={item.image_url} alt={item.category} className="w-full h-full object-contain bg-white" />

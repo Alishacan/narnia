@@ -26,7 +26,7 @@ const tabs = [
     label: 'Add',
     href: '/add',
     icon: () => (
-      <div className="w-12 h-12 -mt-4 bg-narnia-600 rounded-full flex items-center justify-center shadow-lg">
+      <div className="w-12 h-12 -mt-4 bg-clossie-600 rounded-full flex items-center justify-center shadow-lg">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="white" className="w-7 h-7">
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
         </svg>
@@ -71,11 +71,11 @@ export default function BottomNav() {
               key={tab.href}
               href={tab.href}
               className={`flex flex-col items-center justify-center min-w-[64px] py-1 transition-colors ${
-                isActive ? 'text-narnia-600' : 'text-gray-400'
+                isActive ? 'text-clossie-600' : 'text-gray-400'
               }`}
             >
               {tab.icon(isActive)}
-              <span className={`text-xs mt-1 ${tab.href === '/add' ? 'text-narnia-600 font-medium' : ''}`}>
+              <span className={`text-xs mt-1 ${tab.href === '/add' ? 'text-clossie-600 font-medium' : ''}`}>
                 {tab.label}
               </span>
             </Link>

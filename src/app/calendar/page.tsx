@@ -151,21 +151,29 @@ export default function CalendarPage() {
                 onClick={() => setSelectedDate(dateStr === selectedDate ? null : dateStr)}
                 className={`aspect-square rounded-xl flex flex-col items-center justify-center text-sm transition relative ${
                   isSelected
-                    ? 'bg-narnia-600 text-white'
+                    ? 'bg-clossie-600 text-white'
                     : isToday
-                    ? 'bg-narnia-50 text-narnia-600 font-bold'
+                    ? 'bg-clossie-50 text-clossie-600 font-bold'
                     : 'text-gray-700'
                 }`}
               >
                 {day}
                 {entry && !isSelected && (
-                  <div className="w-1.5 h-1.5 bg-narnia-400 rounded-full mt-0.5" />
+                  <div className="w-1.5 h-1.5 bg-clossie-400 rounded-full mt-0.5" />
                 )}
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* Empty month nudge */}
+      {!loading && wearEntries.length === 0 && !selectedDate && (
+        <div className="mx-4 mt-3 bg-clossie-50 rounded-2xl p-4 text-center border border-clossie-100">
+          <p className="text-sm font-medium text-clossie-700 mb-0.5">No outfits logged this month</p>
+          <p className="text-xs text-clossie-400">Tap "Wore it!" on any outfit to start tracking</p>
+        </div>
+      )}
 
       {/* Selected date detail */}
       {selectedDate && (

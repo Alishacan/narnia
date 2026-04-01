@@ -33,7 +33,7 @@ export default function SettingsPage() {
         {/* User card */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-narnia-100 rounded-full flex items-center justify-center">
+            <div className="w-14 h-14 bg-clossie-100 rounded-full flex items-center justify-center">
               <span className="text-2xl">{userName.charAt(0).toUpperCase()}</span>
             </div>
             <div>
@@ -91,7 +91,7 @@ export default function SettingsPage() {
         </button>
 
         <p className="text-center text-xs text-gray-300 pt-4">
-          Narnia v1.0
+          Clossie v1.0
         </p>
       </div>
     </div>

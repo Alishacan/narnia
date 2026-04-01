@@ -88,9 +88,17 @@ export default function StatsPage() {
         </div>
       ) : !stats ? (
         <div className="flex flex-col items-center justify-center py-20 px-6">
-          <div className="text-5xl mb-4">&#x1F4CA;</div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-1">No data yet</h3>
-          <p className="text-gray-400 text-center text-sm">Add items to your closet to see insights</p>
+          <div className="text-5xl mb-4">📊</div>
+          <h3 className="text-lg font-semibold text-gray-700 mb-1">Your insights are waiting</h3>
+          <p className="text-gray-400 text-center text-sm mb-5">
+            Once you add items and log outfits, you'll see cost-per-wear, your most-worn pieces, and what's collecting dust.
+          </p>
+          <a
+            href="/add"
+            className="px-6 py-2.5 bg-clossie-600 text-white rounded-xl text-sm font-semibold active:scale-95 transition"
+          >
+            Add Your First Item
+          </a>
         </div>
       ) : (
         <div className="p-4 space-y-3">
@@ -120,7 +128,7 @@ export default function StatsPage() {
                     </span>
                     <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-narnia-400 rounded-full"
+                        className="h-full bg-clossie-400 rounded-full"
                         style={{ width: `${(count / stats.totalItems) * 100}%` }}
                       />
                     </div>
