@@ -54,22 +54,30 @@ async function tryRemoveBg(apiKey: string, imageFile: File): Promise<ArrayBuffer
 
 async function tryHuggingFace(imageData: ArrayBuffer): Promise<ArrayBuffer | null> {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     const response = await fetch(
       'https://api-inference.huggingface.co/models/briaai/RMBG-1.4',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/octet-stream' },
         body: imageData as any,
+        signal: controller.signal,
       }
     );
 
+    clearTimeout(timeout);
+
+    // 503 means model is warming up — fall through to original image fallback
     if (!response.ok) {
-      console.error('Hugging Face error:', response.status);
+      console.error('Hugging Face error:', response.status, response.status === 503 ? '(model loading)' : '');
       return null;
     }
 
     return await response.arrayBuffer();
-  } catch {
+  } catch (err: any) {
+    if (err?.name === 'AbortError') console.error('Hugging Face timed out after 30s');
     return null;
   }
 }

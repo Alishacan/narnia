@@ -1,16 +1,18 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import BottomNav from '@/components/ui/BottomNav';
+import SessionGuard from '@/components/ui/SessionGuard';
 import { AuthProvider } from '@/lib/auth-context';
+import { ToastProvider } from '@/lib/toast-context';
 
 export const metadata: Metadata = {
-  title: 'Narnia - My Closet',
+  title: 'Clossie - My Closet',
   description: 'Your smart closet organizer',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Narnia',
+    title: 'Clossie',
   },
 };
 
@@ -34,10 +36,13 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-gray-50">
         <AuthProvider>
-          <main className="pb-20 max-w-lg mx-auto">
-            {children}
-          </main>
-          <BottomNav />
+          <ToastProvider>
+            <SessionGuard />
+            <main className="pb-20 max-w-lg mx-auto">
+              {children}
+            </main>
+            <BottomNav />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

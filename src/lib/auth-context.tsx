@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   configured: boolean;
+  sessionExpired: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -20,7 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const configured = isSupabaseConfigured;
+  const manualSignOutRef = { current: false };
 
   useEffect(() => {
     if (!configured) {
@@ -35,7 +38,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' && !manualSignOutRef.current) {
+        // Session expired without user choosing to sign out
+        setSessionExpired(true);
+      }
+      if (event === 'SIGNED_IN') {
+        setSessionExpired(false);
+        manualSignOutRef.current = false;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -63,12 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    manualSignOutRef.current = true;
     const supabase = createClient();
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, configured, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, configured, sessionExpired, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

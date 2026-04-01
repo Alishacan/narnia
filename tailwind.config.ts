@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        narnia: {
+        clossie: {
           50: '#fdf4ff',
           100: '#fae8ff',
           200: '#f5d0fe',

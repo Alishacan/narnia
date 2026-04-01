@@ -6,11 +6,13 @@ import { useAuth } from '@/lib/auth-context';
 import { useOutfits } from '@/hooks/useOutfits';
 import { Outfit, OCCASION_LABELS, SEASON_LABELS } from '@/lib/types';
 import Link from 'next/link';
+import { useToast } from '@/lib/toast-context';
 
 export default function OutfitsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { outfits, loading, logWear } = useOutfits();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
@@ -26,7 +28,7 @@ export default function OutfitsPage() {
           <h1 className="text-2xl font-bold text-gray-900">My Outfits</h1>
           <Link
             href="/outfits/builder"
-            className="px-4 py-2 bg-narnia-600 text-white rounded-xl text-sm font-semibold active:scale-95 transition"
+            className="px-4 py-2 bg-clossie-600 text-white rounded-xl text-sm font-semibold active:scale-95 transition"
           >
             + New Outfit
           </Link>
@@ -48,14 +50,14 @@ export default function OutfitsPage() {
             </p>
             <Link
               href="/outfits/builder"
-              className="px-6 py-3 bg-narnia-600 text-white rounded-xl font-semibold"
+              className="px-6 py-3 bg-clossie-600 text-white rounded-xl font-semibold"
             >
               Create First Outfit
             </Link>
           </div>
         ) : (
           outfits.map((outfit) => (
-            <OutfitCard key={outfit.id} outfit={outfit} onLogWear={() => logWear(outfit.id)} />
+            <OutfitCard key={outfit.id} outfit={outfit} onLogWear={async () => { await logWear(outfit.id); showToast(`Logged "${outfit.name}" — nice fit! 🔥`, 'success'); }} />
           ))
         )}
       </div>
@@ -72,7 +74,7 @@ function OutfitCard({ outfit, onLogWear }: { outfit: Outfit; onLogWear: () => vo
             <h3 className="font-semibold text-gray-800">{outfit.name}</h3>
             <div className="flex gap-2 mt-1">
               {outfit.occasion && (
-                <span className="text-xs bg-narnia-50 text-narnia-600 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-clossie-50 text-clossie-600 px-2 py-0.5 rounded-full">
                   {OCCASION_LABELS[outfit.occasion]}
                 </span>
               )}
@@ -85,7 +87,7 @@ function OutfitCard({ outfit, onLogWear }: { outfit: Outfit; onLogWear: () => vo
           </div>
           <button
             onClick={onLogWear}
-            className="px-3 py-1.5 bg-narnia-50 text-narnia-600 rounded-xl text-xs font-medium active:scale-95 transition"
+            className="px-3 py-1.5 bg-clossie-50 text-clossie-600 rounded-xl text-xs font-medium active:scale-95 transition"
           >
             Wore it!
           </button>

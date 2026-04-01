@@ -37,7 +37,7 @@ export default function SignUpPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-narnia-50 to-white">
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-clossie-50 to-white">
         <div className="text-center max-w-sm">
           <div className="text-5xl mb-4">&#x2709;&#xFE0F;</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Check your email!</h2>
@@ -46,7 +46,7 @@ export default function SignUpPage() {
           </p>
           <Link
             href="/login"
-            className="inline-block py-3 px-6 bg-narnia-600 text-white rounded-xl font-semibold"
+            className="inline-block py-3 px-6 bg-clossie-600 text-white rounded-xl font-semibold"
           >
             Back to Sign In
           </Link>
@@ -56,12 +56,12 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-narnia-50 to-white">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-clossie-50 to-white">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">&#x1F6AA;</div>
-          <h1 className="text-3xl font-bold text-gray-900">Join Narnia</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Join Clossie</h1>
           <p className="text-gray-500 mt-1">Create your smart closet</p>
         </div>
 
@@ -79,7 +79,7 @@ export default function SignUpPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-narnia-500 focus:ring-2 focus:ring-narnia-200 outline-none transition text-gray-900 bg-white"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-clossie-500 focus:ring-2 focus:ring-clossie-200 outline-none transition text-gray-900 bg-white"
               placeholder="Your name"
               required
             />
@@ -91,7 +91,7 @@ export default function SignUpPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-narnia-500 focus:ring-2 focus:ring-narnia-200 outline-none transition text-gray-900 bg-white"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-clossie-500 focus:ring-2 focus:ring-clossie-200 outline-none transition text-gray-900 bg-white"
               placeholder="you@example.com"
               required
             />
@@ -103,7 +103,7 @@ export default function SignUpPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-narnia-500 focus:ring-2 focus:ring-narnia-200 outline-none transition text-gray-900 bg-white"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-clossie-500 focus:ring-2 focus:ring-clossie-200 outline-none transition text-gray-900 bg-white"
               placeholder="At least 6 characters"
               required
               minLength={6}
@@ -113,7 +113,7 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-narnia-600 text-white rounded-xl font-semibold hover:bg-narnia-700 active:scale-[0.98] transition disabled:opacity-50"
+            className="w-full py-3 bg-clossie-600 text-white rounded-xl font-semibold hover:bg-clossie-700 active:scale-[0.98] transition disabled:opacity-50"
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
@@ -121,7 +121,7 @@ export default function SignUpPage() {
 
         <p className="text-center mt-6 text-gray-500">
           Already have an account?{' '}
-          <Link href="/login" className="text-narnia-600 font-medium">
+          <Link href="/login" className="text-clossie-600 font-medium">
             Sign In
           </Link>
         </p>

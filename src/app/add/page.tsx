@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { createClient } from '@/lib/supabase';
+import { useToast } from '@/lib/toast-context';
 import {
   ClothingCategory,
   Season,
@@ -16,13 +17,13 @@ import {
 
 export default function AddItemPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-narnia-200 border-t-narnia-600 rounded-full animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-clossie-200 border-t-clossie-600 rounded-full animate-spin" /></div>}>
       <AddItemContent />
     </Suspense>
   );
 }
 
-type Step = 'capture' | 'processing' | 'ready';
+type Step = 'capture' | 'processing' | 'ready' | 'error';
 
 interface AiTags {
   category: ClothingCategory;
@@ -38,12 +39,15 @@ function AddItemContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   const [step, setStep] = useState<Step>('capture');
   const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [processedBlob, setProcessedBlob] = useState<Blob | null>(null);
   const [tags, setTags] = useState<AiTags | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [isWishlist, setIsWishlist] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -59,10 +63,27 @@ function AddItemContent() {
     if (!authLoading && !user) router.replace('/login');
   }, [user, authLoading, router]);
 
+  // Validate file before processing
+  const validateFile = (file: File): string | null => {
+    const MAX_SIZE_MB = 15;
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    if (!file.type.startsWith('image/')) return 'That file isn\'t an image. Please choose a photo.';
+    if (file.size > MAX_SIZE_BYTES) return `That photo is too large (max ${MAX_SIZE_MB}MB). Try a smaller one.`;
+    return null;
+  };
+
   // Auto-process: as soon as we have an image, start everything
   const processImage = async (file: File) => {
+    const validationError = validateFile(file);
+    if (validationError) {
+      showToast(validationError, 'error');
+      return;
+    }
+
+    setPendingFile(file);
     setStep('processing');
     setStatusMessage('Removing background...');
+    setErrorMessage('');
 
     try {
       // Background removal
@@ -71,7 +92,7 @@ function AddItemContent() {
       setProcessedBlob(resultBlob);
       setProcessedImage(URL.createObjectURL(resultBlob));
 
-      // AI categorization (runs in parallel feel — starts right after bg removal)
+      // AI categorization
       setStatusMessage('Identifying clothing...');
       const base64 = await blobToBase64(resultBlob);
       const res = await fetch('/api/ai/categorize', {
@@ -96,14 +117,29 @@ function AddItemContent() {
       setStep('ready');
     } catch (err) {
       console.error('Processing error:', err);
-      setStatusMessage('Something went wrong. Tap to try again.');
-      setStep('capture');
+      const msg = !navigator.onLine
+        ? 'You\'re offline. Check your connection and try again.'
+        : 'Could not process this photo. Please try again.';
+      setErrorMessage(msg);
+      setStep('error');
+      showToast(msg, 'error');
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processImage(file);
+    // Reset input so same file can be re-selected after an error
+    e.target.value = '';
+  };
+
+  const handleRetry = () => {
+    if (pendingFile) {
+      processImage(pendingFile);
+    } else {
+      setStep('capture');
+      setErrorMessage('');
+    }
   };
 
   // Auto-save: one tap and done
@@ -146,10 +182,15 @@ function AddItemContent() {
       });
 
       if (dbError) throw dbError;
+      showToast(isWishlist ? 'Added to wishlist!' : 'Item added to your closet!', 'success');
       router.push('/closet');
     } catch (err) {
       console.error('Save error:', err);
       setSaving(false);
+      const msg = !navigator.onLine
+        ? 'You\'re offline. Check your connection and try again.'
+        : 'Could not save item. Please try again.';
+      showToast(msg, 'error');
     }
   };
 
@@ -195,7 +236,7 @@ function AddItemContent() {
             </button>
             <button
               onClick={() => setIsWishlist(true)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${isWishlist ? 'bg-white text-narnia-600 shadow-sm' : 'text-gray-500'}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${isWishlist ? 'bg-white text-clossie-600 shadow-sm' : 'text-gray-500'}`}
             >
               Wishlist
             </button>
@@ -209,7 +250,7 @@ function AddItemContent() {
                   fileInputRef.current.click();
                 }
               }}
-              className="flex-1 py-3.5 bg-narnia-600 text-white rounded-xl font-semibold active:scale-95 transition"
+              className="flex-1 py-3.5 bg-clossie-600 text-white rounded-xl font-semibold active:scale-95 transition"
             >
               Take Photo
             </button>
@@ -236,10 +277,37 @@ function AddItemContent() {
         </div>
       )}
 
+      {/* Step: Error with retry */}
+      {step === 'error' && (
+        <div className="flex flex-col items-center justify-center px-6 py-20">
+          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-red-400">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-1">Something went wrong</h3>
+          <p className="text-gray-400 text-center text-sm mb-6">{errorMessage}</p>
+          <div className="flex gap-3 w-full max-w-xs">
+            <button
+              onClick={handleRetry}
+              className="flex-1 py-3.5 bg-clossie-600 text-white rounded-xl font-semibold active:scale-95 transition"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => { setStep('capture'); setErrorMessage(''); setPendingFile(null); }}
+              className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold active:scale-95 transition"
+            >
+              New Photo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Step: Processing (fully automatic) */}
       {step === 'processing' && (
         <div className="flex flex-col items-center justify-center px-6 py-20">
-          <div className="w-10 h-10 border-4 border-narnia-200 border-t-narnia-600 rounded-full animate-spin mb-4" />
+          <div className="w-10 h-10 border-4 border-clossie-200 border-t-clossie-600 rounded-full animate-spin mb-4" />
           <p className="text-gray-600 font-medium">{statusMessage}</p>
           <p className="text-gray-400 text-sm mt-1">Just a sec...</p>
         </div>
@@ -282,7 +350,7 @@ function AddItemContent() {
                 </div>
 
                 {isWishlist && (
-                  <span className="inline-block mt-2 text-xs bg-narnia-50 text-narnia-600 px-2 py-1 rounded-full font-medium">
+                  <span className="inline-block mt-2 text-xs bg-clossie-50 text-clossie-600 px-2 py-1 rounded-full font-medium">
                     Wishlist
                   </span>
                 )}
@@ -294,7 +362,7 @@ function AddItemContent() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-4 bg-narnia-600 text-white rounded-2xl font-semibold text-lg active:scale-[0.98] transition disabled:opacity-50 shadow-lg shadow-narnia-200"
+            className="w-full py-4 bg-clossie-600 text-white rounded-2xl font-semibold text-lg active:scale-[0.98] transition disabled:opacity-50 shadow-lg shadow-clossie-200"
           >
             {saving ? 'Saving...' : isWishlist ? 'Add to Wishlist' : 'Add to Closet'}
           </button>
@@ -319,7 +387,7 @@ function AddItemContent() {
                 </button>
                 <button
                   onClick={() => setIsWishlist(true)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${isWishlist ? 'bg-white text-narnia-600 shadow-sm' : 'text-gray-500'}`}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${isWishlist ? 'bg-white text-clossie-600 shadow-sm' : 'text-gray-500'}`}
                 >
                   Wishlist
                 </button>
@@ -334,7 +402,7 @@ function AddItemContent() {
                       key={cat}
                       onClick={() => setTags({ ...tags, category: cat })}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
-                        tags.category === cat ? 'bg-narnia-600 text-white' : 'bg-gray-100 text-gray-600'
+                        tags.category === cat ? 'bg-clossie-600 text-white' : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       {CATEGORY_ICONS[cat]} {CATEGORY_LABELS[cat]}
@@ -352,7 +420,7 @@ function AddItemContent() {
                       key={s}
                       onClick={() => setTags({ ...tags, season: s })}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
-                        tags.season === s ? 'bg-narnia-600 text-white' : 'bg-gray-100 text-gray-600'
+                        tags.season === s ? 'bg-clossie-600 text-white' : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       {SEASON_LABELS[s]}
@@ -370,7 +438,7 @@ function AddItemContent() {
                       key={o}
                       onClick={() => setTags({ ...tags, occasion: o })}
                       className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
-                        tags.occasion === o ? 'bg-narnia-600 text-white' : 'bg-gray-100 text-gray-600'
+                        tags.occasion === o ? 'bg-clossie-600 text-white' : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       {OCCASION_LABELS[o]}
@@ -426,8 +494,8 @@ function AddItemContent() {
 
           {/* Add another */}
           <button
-            onClick={() => { setStep('capture'); setTags(null); setProcessedImage(null); setShowDetails(false); }}
-            className="w-full text-center text-sm text-narnia-600 font-medium py-2"
+            onClick={() => { setStep('capture'); setTags(null); setProcessedImage(null); setShowDetails(false); setPendingFile(null); setErrorMessage(''); }}
+            className="w-full text-center text-sm text-clossie-600 font-medium py-2"
           >
             + Add Another Item
           </button>

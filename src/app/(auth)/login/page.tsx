@@ -28,12 +28,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-narnia-50 to-white">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-clossie-50 to-white">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">&#x1F6AA;</div>
-          <h1 className="text-3xl font-bold text-gray-900">Narnia</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Clossie</h1>
           <p className="text-gray-500 mt-1">Your smart closet</p>
         </div>
 
@@ -51,7 +51,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-narnia-500 focus:ring-2 focus:ring-narnia-200 outline-none transition text-gray-900 bg-white"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-clossie-500 focus:ring-2 focus:ring-clossie-200 outline-none transition text-gray-900 bg-white"
               placeholder="you@example.com"
               required
             />
@@ -63,7 +63,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-narnia-500 focus:ring-2 focus:ring-narnia-200 outline-none transition text-gray-900 bg-white"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-clossie-500 focus:ring-2 focus:ring-clossie-200 outline-none transition text-gray-900 bg-white"
               placeholder="Your password"
               required
             />
@@ -72,7 +72,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-narnia-600 text-white rounded-xl font-semibold hover:bg-narnia-700 active:scale-[0.98] transition disabled:opacity-50"
+            className="w-full py-3 bg-clossie-600 text-white rounded-xl font-semibold hover:bg-clossie-700 active:scale-[0.98] transition disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
@@ -80,7 +80,7 @@ export default function LoginPage() {
 
         <p className="text-center mt-6 text-gray-500">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-narnia-600 font-medium">
+          <Link href="/signup" className="text-clossie-600 font-medium">
             Sign Up
           </Link>
         </p>
