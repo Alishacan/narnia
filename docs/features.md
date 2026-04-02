@@ -23,6 +23,7 @@
 - **Toggle laundry** — Mark items as currently in the wash
 - **Wear count** — How many times the item has been worn
 - **Delete** — With confirmation dialog
+- **"✨ What goes with this?"** — Prominent CTA that jumps to AI outfit suggestions with this item pre-selected; auto-generates suggestions on arrival (no extra tap needed)
 - **Build outfit** — Quick action to jump to outfit builder with this item
 
 ## Outfit Management
