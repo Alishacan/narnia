@@ -5,18 +5,18 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
 export default function Home() {
-  const { user, loading, configured } = useAuth();
+  const { user, loading, configured, onboarded } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && configured) {
       if (user) {
-        router.replace('/closet');
+        router.replace(onboarded ? '/closet' : '/onboarding');
       } else {
         router.replace('/login');
       }
     }
-  }, [user, loading, configured, router]);
+  }, [user, loading, configured, onboarded, router]);
 
   if (!configured) {
     return (

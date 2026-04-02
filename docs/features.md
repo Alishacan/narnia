@@ -62,6 +62,19 @@
 - **"Style This" entry point** — From any item detail page, get outfits built around that specific piece
 - **Loading UX** — Rotating status messages and skeleton cards while AI thinks
 
+## Onboarding
+- **4-step welcome flow** — New users see a swipeable carousel introducing Clossie's key features before entering the app
+- **Step 1: Welcome** — Personalized greeting using your first name
+- **Step 2: AI Magic** — Explains the AI-powered categorization (snap a photo, get instant tags)
+- **Step 3: Outfit Ideas** — Introduces the AI outfit suggestion feature
+- **Step 4: Let's Go** — Final call-to-action to start building your closet
+- **Swipe gestures** — Swipe left/right to navigate between steps on mobile
+- **Dot indicators** — Visual progress dots showing which step you're on
+- **Skip button** — Skip the entire flow at any time
+- **One-time only** — Completion is tracked via Supabase `user_metadata` (`onboarded_at` timestamp); returning users go straight to their closet
+- **No database migration** — Uses Supabase auth metadata (JSONB), so no new tables needed
+- **Hidden nav** — Bottom navigation bar is hidden during onboarding for a clean, focused experience
+
 ## Wishlist
 - **Separate view** — Toggle between owned items and wishlist
 - **Same features** — Wishlist items support all the same tagging and filtering

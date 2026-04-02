@@ -56,8 +56,8 @@ const tabs = [
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // Don't show nav on auth pages
-  if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
+  // Don't show nav on auth or onboarding pages
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/onboarding')) {
     return null;
   }
 

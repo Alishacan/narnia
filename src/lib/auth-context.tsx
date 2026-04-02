@@ -10,9 +10,11 @@ interface AuthContextType {
   loading: boolean;
   configured: boolean;
   sessionExpired: boolean;
+  onboarded: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  completeOnboarding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [onboarded, setOnboarded] = useState(true); // default true to avoid flash
   const configured = isSupabaseConfigured;
   const manualSignOutRef = { current: false };
 
@@ -35,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setOnboarded(!!session?.user?.user_metadata?.onboarded_at);
       setLoading(false);
     });
 
@@ -49,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setSession(session);
       setUser(session?.user ?? null);
+      setOnboarded(!!session?.user?.user_metadata?.onboarded_at);
       setLoading(false);
     });
 
@@ -79,8 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const completeOnboarding = async () => {
+    const supabase = createClient();
+    await supabase.auth.updateUser({
+      data: { onboarded_at: new Date().toISOString() },
+    });
+    setOnboarded(true);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, configured, sessionExpired, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, configured, sessionExpired, onboarded, signUp, signIn, signOut, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   );
