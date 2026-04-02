@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { createClient } from '@/lib/supabase';
 import { ClothingItem, CATEGORY_LABELS, CATEGORY_ICONS, SEASON_LABELS, OCCASION_LABELS } from '@/lib/types';
 import { useToast } from '@/lib/toast-context';
+import { haptics } from '@/lib/haptics';
 
 export default function ItemDetailPage() {
   const { id } = useParams();
@@ -59,6 +60,7 @@ export default function ItemDetailPage() {
     if (!item) return;
     const { error } = await supabase.from('clothing_items').delete().eq('id', item.id);
     if (error) { showToast('Could not delete item. Try again.', 'error'); return; }
+    haptics.error();
     showToast('Item deleted', 'info');
     router.push('/closet');
   };
