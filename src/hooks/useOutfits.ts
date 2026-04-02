@@ -100,15 +100,17 @@ export function useOutfits() {
     setOutfits((prev) => prev.filter((o) => o.id !== id));
   };
 
-  const logWear = async (outfitId: string) => {
-    if (!user) return;
+  const logWear = async (outfitId: string): Promise<boolean> => {
+    if (!user) return false;
     const today = new Date().toISOString().split('T')[0];
 
-    await supabase.from('wear_log').insert({
+    const { error } = await supabase.from('wear_log').insert({
       user_id: user.id,
       outfit_id: outfitId,
       worn_date: today,
     });
+
+    if (error) return false;
 
     // Update wear counts for items in this outfit
     const outfit = outfits.find((o) => o.id === outfitId);
@@ -125,6 +127,7 @@ export function useOutfits() {
     }
 
     await fetchOutfits();
+    return true;
   };
 
   return { outfits, loading, fetchOutfits, createOutfit, deleteOutfit, logWear };

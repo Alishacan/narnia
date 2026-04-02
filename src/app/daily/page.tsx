@@ -156,13 +156,12 @@ function DailyContent() {
 
       const itemMap = new Map(items.map((i) => [i.id, i]));
       const resolved = raw
-        .map((s) => ({
-          name: s.name,
-          reason: s.reason,
-          items: s.item_ids.map((id) => itemMap.get(id)).filter(Boolean) as ClothingItem[],
-          saved: false,
-          wornToday: false,
-        }))
+        .map((s) => {
+          const resolvedItems = s.item_ids
+            .map((id) => itemMap.get(id))
+            .filter((item): item is ClothingItem => item !== undefined);
+          return { name: s.name, reason: s.reason, items: resolvedItems, saved: false, wornToday: false };
+        })
         .filter((s) => s.items.length >= 2);
 
       if (resolved.length === 0) {
@@ -210,9 +209,9 @@ function DailyContent() {
         currentSeason
       );
       if (result) {
-        await logWear(result.id);
-        setOutfit({ ...outfit, saved: true, wornToday: true });
-        showToast('Outfit logged for today!', 'success');
+        const wore = await logWear(result.id);
+        setOutfit({ ...outfit, saved: true, wornToday: !!wore });
+        showToast(wore ? 'Outfit logged for today!' : 'Outfit saved! Could not log wear.', wore ? 'success' : 'info');
       } else {
         showToast('Could not save outfit.', 'error');
       }
