@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useClothingItems } from '@/hooks/useClothingItems';
@@ -72,6 +72,17 @@ function SuggestContent() {
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
   }, [user, authLoading, router]);
+
+  // Auto-generate when arriving with a pre-selected item
+  const autoTriggered = useRef(false);
+  useEffect(() => {
+    if (autoTriggered.current) return;
+    if (!preselectedId) return;
+    if (itemsLoading || items.length === 0) return;
+    autoTriggered.current = true;
+    handleGenerate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedId, itemsLoading, items.length]);
 
   // Rotate loading messages
   useEffect(() => {
