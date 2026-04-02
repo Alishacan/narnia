@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+const VALID_CATEGORIES = ['tops','bottoms','dresses','outerwear','shoes','bags','accessories','jewelry','activewear','other'];
+const VALID_SEASONS = ['spring','summer','fall','winter','all-season'];
+const VALID_OCCASIONS = ['casual','work','going-out','formal','athletic','lounge'];
 
 const PROMPT = `You are a clothing categorization AI. Analyze the clothing item in the image and return a JSON object with these fields:
 - category: one of "tops", "bottoms", "dresses", "outerwear", "shoes", "bags", "accessories", "jewelry", "activewear", "other"
@@ -14,8 +20,25 @@ export async function POST(request: NextRequest) {
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
 
+  // Auth check
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { imageBase64 } = await request.json();
+
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
+      return NextResponse.json({ error: 'imageBase64 is required' }, { status: 400 });
+    }
+    if (imageBase64.length > 20 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Image too large' }, { status: 413 });
+    }
 
     let content: string | null = null;
 
@@ -34,7 +57,17 @@ export async function POST(request: NextRequest) {
 
     // Parse JSON from the response (handle markdown code blocks)
     const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const categorization = JSON.parse(jsonStr);
+    const raw = JSON.parse(jsonStr);
+
+    // Validate AI output — clamp to known values
+    const categorization = {
+      category: VALID_CATEGORIES.includes(raw.category) ? raw.category : 'other',
+      subcategory: typeof raw.subcategory === 'string' ? raw.subcategory.slice(0, 100) : null,
+      color: typeof raw.color === 'string' ? raw.color.slice(0, 30) : '#808080',
+      secondary_color: typeof raw.secondary_color === 'string' ? raw.secondary_color.slice(0, 30) : null,
+      season: VALID_SEASONS.includes(raw.season) ? raw.season : 'all-season',
+      occasion: VALID_OCCASIONS.includes(raw.occasion) ? raw.occasion : 'casual',
+    };
 
     return NextResponse.json(categorization);
   } catch (error) {

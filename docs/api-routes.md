@@ -97,23 +97,56 @@ All fields except `items` are optional.
 
 ---
 
-## POST `/api/ai/remove-bg`
+## POST `/api/ai/detect`
 
-Removes the background from a clothing image.
+Detects all clothing items in a photo and returns bounding boxes.
 
 ### Request
 ```json
 {
-  "image": "base64-encoded-image-string"
+  "imageBase64": "base64-encoded-image-string"
 }
 ```
 
 ### Response
 ```json
 {
-  "image": "base64-encoded-png-with-transparent-background"
+  "items": [
+    {
+      "id": "detected-0",
+      "label": "blue jeans",
+      "category": "bottoms",
+      "box": [120, 50, 850, 480],
+      "selected": true
+    }
+  ]
 }
 ```
+
+### How it works
+1. Uses **Gemini 2.0 Flash** (requires `GEMINI_API_KEY`)
+2. Returns empty array if no key or no items found
+3. Bounding box coordinates are normalized to 0–1000 scale (0 = top/left, 1000 = bottom/right)
+4. Format: `[y_min, x_min, y_max, x_max]`
+5. Uses low temperature (0.1) for consistent results
+6. 20-second timeout with AbortController
+7. All returned items are auto-selected (`selected: true`)
+
+### Valid return values
+- **category:** tops, bottoms, dresses, outerwear, shoes, bags, accessories, jewelry, activewear, other
+
+---
+
+## POST `/api/ai/remove-bg`
+
+Removes the background from a clothing image.
+
+### Request
+FormData with a single field:
+- `image` — the image file (binary)
+
+### Response
+Binary PNG image with transparent background (Content-Type: `image/png`)
 
 ### How it works
 1. Tries **remove.bg** API first (requires `REMOVE_BG_API_KEY`)

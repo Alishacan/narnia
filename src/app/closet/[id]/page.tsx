@@ -111,31 +111,29 @@ export default function ItemDetailPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="px-4 py-3 space-y-2">
+      <div className="flex gap-2 px-4 py-3">
+        <button
+          onClick={toggleLaundry}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition ${
+            item.in_laundry
+              ? 'bg-blue-100 text-blue-600'
+              : 'bg-gray-100 text-gray-600'
+          }`}
+        >
+          {item.in_laundry ? '\uD83E\uDDFA In Laundry' : '\uD83E\uDDFA Mark as Laundry'}
+        </button>
+        <button
+          onClick={() => router.push(`/outfits/builder?item=${item.id}`)}
+          className="flex-1 py-2.5 bg-clossie-100 text-clossie-700 rounded-xl text-sm font-medium"
+        >
+          Build Outfit
+        </button>
         <button
           onClick={() => router.push(`/outfits/suggest?item=${item.id}`)}
-          className="w-full py-3 bg-clossie-600 text-white rounded-2xl text-sm font-semibold active:scale-[0.98] transition"
+          className="flex-1 py-2.5 bg-clossie-50 text-clossie-700 rounded-xl text-sm font-medium"
         >
-          ✨ What goes with this?
+          Style This
         </button>
-        <div className="flex gap-2">
-          <button
-            onClick={toggleLaundry}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition ${
-              item.in_laundry
-                ? 'bg-blue-100 text-blue-600'
-                : 'bg-gray-100 text-gray-600'
-            }`}
-          >
-            {item.in_laundry ? '\uD83E\uDDFA In Laundry' : '\uD83E\uDDFA Laundry'}
-          </button>
-          <button
-            onClick={() => router.push(`/outfits/builder?item=${item.id}`)}
-            className="flex-1 py-2.5 bg-clossie-100 text-clossie-700 rounded-xl text-sm font-medium"
-          >
-            Build Outfit
-          </button>
-        </div>
       </div>
 
       {/* Details */}

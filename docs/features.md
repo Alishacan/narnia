@@ -4,8 +4,15 @@
 
 ### Adding Items
 - **Photo capture** — Use camera or upload from gallery
+- **Multi-item AI detection** — Gemini 2.0 Flash scans the photo and draws bounding boxes around every clothing item it finds
+- **Apple-style selection canvas** — Detected items get shimmering comet outlines; tap to select/deselect. Unselected items are dimmed, selected items "lift" to full brightness
+- **Manual draw fallback** — If AI misses an item, tap "+ Draw Manually" and drag a rectangle around it
+- **Single-item shortcut** — Photos with one item auto-select and skip straight to review
+- **Bulk extraction** — Each selected item is cropped, background-removed, and AI-categorized individually with a progress bar
+- **Card stack review** — Review each item on a stacked card UI (peek cards behind). Edit tags, category, color, season, occasion, brand, size, price, and notes per item
+- **Bulk save** — "Save All" creates a separate closet entry for each reviewed item in one tap
 - **Background removal** — Automatically removes background for clean product-style photos
-- **AI categorization** — Gemini/GPT analyzes the image and suggests category, subcategory, color, season, and occasion
+- **AI categorization** — Gemini/GPT analyzes each item and suggests category, subcategory, color, season, and occasion
 - **Manual editing** — Review and adjust all AI-suggested tags before saving
 - **Share target** — Share images from other apps directly into Clossie (PWA feature)
 
@@ -23,7 +30,6 @@
 - **Toggle laundry** — Mark items as currently in the wash
 - **Wear count** — How many times the item has been worn
 - **Delete** — With confirmation dialog
-- **"✨ What goes with this?"** — Prominent CTA that jumps to AI outfit suggestions with this item pre-selected; auto-generates suggestions on arrival (no extra tap needed)
 - **Build outfit** — Quick action to jump to outfit builder with this item
 
 ## Outfit Management
@@ -62,18 +68,6 @@
 - **One-tap save** — Save any suggestion as a real outfit with a single tap
 - **"Style This" entry point** — From any item detail page, get outfits built around that specific piece
 - **Loading UX** — Rotating status messages and skeleton cards while AI thinks
-
-## Daily Outfit Suggestion
-- **Auto-generate on load** — Opens with a personalized greeting and instantly generates one AI outfit for today
-- **Season-aware** — Automatically detects the current season from the calendar and filters items accordingly
-- **Personalized greeting** — Shows "Good morning/afternoon/evening" with the user's first name
-- **Vertical item cards** — Each outfit item displayed as a card with image, category, color, brand, and "New" badge for unworn items
-- **Wear This Today** — One-tap to save the outfit AND log it as worn today (increments wear count on all items)
-- **Save for later** — Save the outfit without logging a wear
-- **Shuffle** — Regenerate to get a different outfit suggestion
-- **Reuses AI engine** — Same `/api/ai/suggest-outfits` endpoint as the AI Outfit Ideas page
-- **Bottom nav integration** — Accessible via the "Today" tab (sun icon) in the bottom navigation bar
-- **Prioritizes unworn** — AI favors items with low wear counts to keep your wardrobe rotation fresh
 
 ## Onboarding
 - **4-step welcome flow** — New users see a swipeable carousel introducing Clossie's key features before entering the app
