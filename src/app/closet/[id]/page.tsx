@@ -26,6 +26,7 @@ export default function ItemDetailPage() {
       .from('clothing_items')
       .select('*')
       .eq('id', id)
+      .eq('user_id', user.id)
       .single()
       .then(({ data }) => {
         if (data) setItem(data as ClothingItem);
@@ -35,30 +36,32 @@ export default function ItemDetailPage() {
   }, [user, id]);
 
   const toggleFavorite = async () => {
-    if (!item) return;
+    if (!item || !user) return;
     const { data } = await supabase
       .from('clothing_items')
       .update({ is_favorite: !item.is_favorite })
       .eq('id', item.id)
+      .eq('user_id', user.id)
       .select()
       .single();
     if (data) { setItem(data as ClothingItem); showToast(data.is_favorite ? 'Added to favorites ❤️' : 'Removed from favorites', 'info'); }
   };
 
   const toggleLaundry = async () => {
-    if (!item) return;
+    if (!item || !user) return;
     const { data } = await supabase
       .from('clothing_items')
       .update({ in_laundry: !item.in_laundry })
       .eq('id', item.id)
+      .eq('user_id', user.id)
       .select()
       .single();
     if (data) { setItem(data as ClothingItem); showToast(data.in_laundry ? 'Marked as in laundry 🧺' : 'Removed from laundry', 'info'); }
   };
 
   const handleDelete = async () => {
-    if (!item) return;
-    const { error } = await supabase.from('clothing_items').delete().eq('id', item.id);
+    if (!item || !user) return;
+    const { error } = await supabase.from('clothing_items').delete().eq('id', item.id).eq('user_id', user.id);
     if (error) { showToast('Could not delete item. Try again.', 'error'); return; }
     haptics.error();
     showToast('Item deleted', 'info');
