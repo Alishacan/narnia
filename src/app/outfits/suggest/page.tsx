@@ -75,12 +75,16 @@ function SuggestContent() {
 
   // Auto-generate when arriving with a pre-selected item
   const autoTriggered = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     if (autoTriggered.current) return;
     if (!preselectedId) return;
     if (itemsLoading || items.length === 0) return;
     autoTriggered.current = true;
-    handleGenerate();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    handleGenerate(controller.signal);
+    return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectedId, itemsLoading, items.length]);
 
@@ -98,7 +102,7 @@ function SuggestContent() {
   const availableItems = items.filter((i) => !i.in_laundry && !i.is_wishlist);
   const laundryCount = items.filter((i) => i.in_laundry).length;
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (signal?: AbortSignal) => {
     setLoading(true);
     setError('');
     setSuggestions([]);
@@ -136,6 +140,7 @@ function SuggestContent() {
           mustIncludeItemId: preselectedId || undefined,
           preferUnworn,
         }),
+        signal,
       });
 
       if (!res.ok) {
@@ -273,6 +278,9 @@ function SuggestContent() {
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs text-gray-500">Prioritize unworn items</span>
             <button
+              role="switch"
+              aria-checked={preferUnworn}
+              aria-label="Prioritize unworn items"
               onClick={() => setPreferUnworn(!preferUnworn)}
               className={`w-10 h-6 rounded-full transition-colors ${
                 preferUnworn ? 'bg-clossie-500' : 'bg-gray-300'
@@ -293,7 +301,7 @@ function SuggestContent() {
           )}
 
           <button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             disabled={loading || itemsLoading}
             className="w-full py-3 bg-clossie-600 text-white rounded-xl font-semibold text-sm active:scale-[0.98] transition disabled:opacity-50"
           >
@@ -323,7 +331,7 @@ function SuggestContent() {
           <div className="bg-red-50 rounded-2xl p-4 text-center">
             <p className="text-red-600 text-sm mb-2">{error}</p>
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               className="text-clossie-600 text-sm font-medium"
             >
               Try Again

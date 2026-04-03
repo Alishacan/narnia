@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const ALL_CATEGORIES: (ClothingCategory | 'all')[] = [
-  'all', 'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories', 'jewelry', 'activewear', 'other',
+  'all', 'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories', 'jewelry', 'activewear',
 ];
 
 export default function ClosetPage() {

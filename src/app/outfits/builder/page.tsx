@@ -18,7 +18,7 @@ import {
 import { haptics } from '@/lib/haptics';
 
 const BUILD_CATEGORIES: ClothingCategory[] = [
-  'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories', 'jewelry', 'activewear', 'other',
+  'tops', 'bottoms', 'dresses', 'outerwear', 'shoes', 'bags', 'accessories', 'jewelry',
 ];
 
 export default function OutfitBuilderPage() {
