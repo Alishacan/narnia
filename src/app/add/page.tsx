@@ -99,12 +99,28 @@ function AddItemContent() {
     return null;
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    let file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
     const err = validateFile(file);
     if (err) { showToast(err, 'error'); return; }
+
+    // Convert HEIC/HEIF to JPEG (iPhone default format, not supported in most browsers)
+    if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+      try {
+        setStep('detecting');
+        setStatusMessage('Converting photo format...');
+        const heic2any = (await import('heic2any')).default;
+        const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }) as Blob;
+        file = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' });
+      } catch {
+        showToast('Could not convert this photo format. Try taking a screenshot instead.', 'error');
+        setStep('capture');
+        return;
+      }
+    }
+
     startDetection(file);
   };
 
@@ -113,6 +129,7 @@ function AddItemContent() {
   const startDetection = async (file: File) => {
     setOriginalFile(file);
     setStep('detecting');
+    setStatusMessage('Finding clothing items...');
     setErrorMessage('');
 
     try {
