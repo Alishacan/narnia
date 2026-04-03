@@ -88,16 +88,23 @@ export function useOutfits() {
       clothing_item_id: itemId,
     }));
 
-    await supabase.from('outfit_items').insert(outfitItemRows);
+    const { error: itemsError } = await supabase.from('outfit_items').insert(outfitItemRows);
+    if (itemsError) {
+      await supabase.from('outfits').delete().eq('id', outfit.id);
+      return null;
+    }
 
     await fetchOutfits();
     return outfit;
   };
 
   const deleteOutfit = async (id: string) => {
+    if (!user) return;
     await supabase.from('outfit_items').delete().eq('outfit_id', id);
-    await supabase.from('outfits').delete().eq('id', id);
-    setOutfits((prev) => prev.filter((o) => o.id !== id));
+    const { error } = await supabase.from('outfits').delete().eq('id', id).eq('user_id', user.id);
+    if (!error) {
+      setOutfits((prev) => prev.filter((o) => o.id !== id));
+    }
   };
 
   const logWear = async (outfitId: string): Promise<boolean> => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { createClient, isSupabaseConfigured } from './supabase';
 
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [onboarded, setOnboarded] = useState(true); // default true to avoid flash
   const configured = isSupabaseConfigured;
-  const manualSignOutRef = { current: false };
+  const manualSignOutRef = useRef(false);
 
   useEffect(() => {
     if (!configured) {
@@ -39,6 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setOnboarded(!!session?.user?.user_metadata?.onboarded_at);
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
 

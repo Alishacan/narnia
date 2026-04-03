@@ -57,10 +57,12 @@ export function useClothingItems(category?: ClothingCategory) {
   };
 
   const updateItem = async (id: string, updates: Partial<ClothingItem>) => {
+    if (!user) return null;
     const { data, error } = await supabase
       .from('clothing_items')
       .update(updates)
       .eq('id', id)
+      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -72,7 +74,8 @@ export function useClothingItems(category?: ClothingCategory) {
   };
 
   const deleteItem = async (id: string) => {
-    const { error } = await supabase.from('clothing_items').delete().eq('id', id);
+    if (!user) return false;
+    const { error } = await supabase.from('clothing_items').delete().eq('id', id).eq('user_id', user.id);
     if (!error) {
       setItems((prev) => prev.filter((item) => item.id !== id));
     }

@@ -37,26 +37,28 @@ export default function ItemDetailPage() {
 
   const toggleFavorite = async () => {
     if (!item || !user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('clothing_items')
       .update({ is_favorite: !item.is_favorite })
       .eq('id', item.id)
       .eq('user_id', user.id)
       .select()
       .single();
-    if (data) { setItem(data as ClothingItem); showToast(data.is_favorite ? 'Added to favorites ❤️' : 'Removed from favorites', 'info'); }
+    if (error) { showToast('Could not update. Try again.', 'error'); return; }
+    if (data) { setItem(data as ClothingItem); showToast(data.is_favorite ? 'Added to favorites' : 'Removed from favorites', 'info'); }
   };
 
   const toggleLaundry = async () => {
     if (!item || !user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('clothing_items')
       .update({ in_laundry: !item.in_laundry })
       .eq('id', item.id)
       .eq('user_id', user.id)
       .select()
       .single();
-    if (data) { setItem(data as ClothingItem); showToast(data.in_laundry ? 'Marked as in laundry 🧺' : 'Removed from laundry', 'info'); }
+    if (error) { showToast('Could not update. Try again.', 'error'); return; }
+    if (data) { setItem(data as ClothingItem); showToast(data.in_laundry ? 'Marked as in laundry' : 'Removed from laundry', 'info'); }
   };
 
   const convertToOwned = async () => {

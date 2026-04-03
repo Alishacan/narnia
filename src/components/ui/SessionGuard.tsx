@@ -12,11 +12,14 @@ export default function SessionGuard() {
   const handledRef = useRef(false);
 
   useEffect(() => {
-    if (sessionExpired && !handledRef.current) {
-      handledRef.current = true;
-      showToast('Your session expired. Please sign in again.', 'error');
-      setTimeout(() => router.replace('/login'), 500);
+    if (!sessionExpired) {
+      handledRef.current = false;
+      return;
     }
+    if (handledRef.current) return;
+    handledRef.current = true;
+    showToast('Your session expired. Please sign in again.', 'error');
+    setTimeout(() => router.replace('/login'), 500);
   }, [sessionExpired, showToast, router]);
 
   return null;
