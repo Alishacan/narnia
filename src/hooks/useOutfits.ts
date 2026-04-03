@@ -29,19 +29,27 @@ export function useOutfits() {
 
     // Get outfit items for all outfits
     const outfitIds = outfitData.map((o) => o.id);
-    const { data: outfitItems } = await supabase
-      .from('outfit_items')
-      .select('outfit_id, clothing_item_id')
-      .in('outfit_id', outfitIds);
+    let outfitItems: { outfit_id: string; clothing_item_id: string }[] = [];
+    if (outfitIds.length > 0) {
+      const { data } = await supabase
+        .from('outfit_items')
+        .select('outfit_id, clothing_item_id')
+        .in('outfit_id', outfitIds);
+      outfitItems = data || [];
+    }
 
     // Get all referenced clothing items
     const clothingIds = [...new Set((outfitItems || []).map((oi) => oi.clothing_item_id))];
-    const { data: clothingData } = await supabase
-      .from('clothing_items')
-      .select('*')
-      .in('id', clothingIds.length > 0 ? clothingIds : ['none']);
+    let clothingData: ClothingItem[] = [];
+    if (clothingIds.length > 0) {
+      const { data } = await supabase
+        .from('clothing_items')
+        .select('*')
+        .in('id', clothingIds);
+      clothingData = (data || []) as ClothingItem[];
+    }
 
-    const clothingMap = new Map((clothingData || []).map((c) => [c.id, c as ClothingItem]));
+    const clothingMap = new Map(clothingData.map((c) => [c.id, c]));
 
     // Assemble outfits with items
     const assembled = outfitData.map((outfit) => ({
