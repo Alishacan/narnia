@@ -102,26 +102,28 @@ export default function SettingsPage() {
     } catch { showToast('Export failed', 'error'); }
     finally { setExporting(false); }
   };
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const handleDeleteAccount = async () => {
-    if (!user) return;
+    if (!user || deleteConfirmText !== 'DELETE') {
+      showToast('Type DELETE to confirm', 'error');
+      return;
+    }
+    setDeleting(true);
     try {
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: 'DELETE' }),
+      });
+      if (!res.ok) throw new Error('Failed');
       const supabase = createClient();
-      await supabase.from('wear_log').delete().eq('user_id', user.id);
-      const { data: userOutfits } = await supabase.from('outfits').select('id').eq('user_id', user.id);
-      if (userOutfits && userOutfits.length > 0) {
-        await supabase.from('outfit_items').delete().in('outfit_id', userOutfits.map(o => o.id));
-      }
-      await supabase.from('outfits').delete().eq('user_id', user.id);
-      const { data: imageFiles } = await supabase.storage.from('clothing-images').list(user.id);
-      if (imageFiles && imageFiles.length > 0) {
-        await supabase.storage.from('clothing-images').remove(imageFiles.map(f => `${user.id}/${f.name}`));
-      }
-      await supabase.from('clothing_items').delete().eq('user_id', user.id);
       await supabase.auth.signOut();
-      showToast('Account data deleted. You have been signed out.', 'success');
+      showToast('Account deleted. You have been signed out.', 'success');
       router.replace('/login');
     } catch {
-      showToast('Could not delete account data. Try again.', 'error');
+      showToast('Could not delete account. Try again.', 'error');
+      setDeleting(false);
     }
     setShowDeleteConfirm(false);
   };
@@ -211,9 +213,21 @@ export default function SettingsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full space-y-4">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Account?</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">This will permanently delete your account and all your data. This action cannot be undone.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Type <span className="font-mono text-red-500">DELETE</span> to confirm:</p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+              autoFocus
+            />
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium">Cancel</button>
-              <button onClick={handleDeleteAccount} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium">Delete</button>
+              <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} className="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium">Cancel</button>
+              <button onClick={handleDeleteAccount} disabled={deleteConfirmText !== 'DELETE' || deleting}
+                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium disabled:opacity-40">
+                {deleting ? 'Deleting...' : 'Delete Forever'}
+              </button>
             </div>
           </div>
         </div>

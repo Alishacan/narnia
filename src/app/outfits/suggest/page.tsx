@@ -412,7 +412,7 @@ function Header({ onBack }: { onBack: () => void }) {
   return (
     <div className="bg-white/90 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-100 px-4 py-3">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="text-gray-400 p-1">
+        <button onClick={onBack} className="text-gray-400 p-1" aria-label="Go back">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"

@@ -5,8 +5,10 @@
  */
 export async function compressImage(file: File, maxSize = 1200, quality = 0.8): Promise<Blob> {
   return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
       let { width, height } = img;
 
       // Only downscale, never upscale
@@ -19,7 +21,8 @@ export async function compressImage(file: File, maxSize = 1200, quality = 0.8): 
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
       ctx.drawImage(img, 0, 0, width, height);
 
       canvas.toBlob(
@@ -32,7 +35,10 @@ export async function compressImage(file: File, maxSize = 1200, quality = 0.8): 
         quality
       );
     };
-    img.onerror = () => reject(new Error('Could not load image'));
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Could not load image'));
+    };
+    img.src = objectUrl;
   });
 }
