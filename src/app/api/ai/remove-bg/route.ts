@@ -1,12 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
+  // Auth check
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const formData = await request.formData();
     const imageFile = formData.get('image') as File;
 
     if (!imageFile) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
+    }
+    if (imageFile.size > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Image too large (max 10MB)' }, { status: 413 });
     }
 
     const imageArrayBuffer = await imageFile.arrayBuffer();

@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+const VALID_CATEGORIES = ['tops','bottoms','dresses','outerwear','shoes','bags','accessories','jewelry','activewear','other'];
 
 const DETECT_PROMPT = `You are a clothing detection AI. Analyze this image and find every distinct clothing item or accessory visible.
 
@@ -17,12 +21,23 @@ Rules:
 - Return ONLY the JSON array, no markdown, no explanation`;
 
 export async function POST(request: NextRequest) {
+  // Auth check
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) return NextResponse.json({ items: [] }, { status: 500 });
 
   try {
     const { imageBase64 } = await request.json();
-    if (!imageBase64) return NextResponse.json({ items: [] }, { status: 400 });
+    if (!imageBase64 || typeof imageBase64 !== 'string') return NextResponse.json({ items: [] }, { status: 400 });
+    if (imageBase64.length > 20 * 1024 * 1024) return NextResponse.json({ error: 'Image too large' }, { status: 413 });
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
@@ -58,17 +73,20 @@ export async function POST(request: NextRequest) {
       .filter((item: Record<string, unknown>) =>
         item.box && Array.isArray(item.box) && (item.box as unknown[]).length === 4
       )
-      .map((item: Record<string, unknown>, index: number) => ({
+      .map((item: Record<string, unknown>, index: number) => {
+        const cat = String(item.category || 'other');
+        return {
         id: `detected-${index}`,
-        label: (item.label as string) || 'Clothing item',
-        category: (item.category as string) || 'other',
+        label: String(item.label || 'Clothing item').slice(0, 100),
+        category: VALID_CATEGORIES.includes(cat) ? cat : 'other',
         box: (item.box as number[]).map((v: number) => Math.max(0, Math.min(1000, Math.round(v)))),
         selected: true,
-      }));
+      };
+      });
 
     return NextResponse.json({ items });
   } catch (error) {
     console.error('Detection error:', error);
-    return NextResponse.json({ items: [] });
+    return NextResponse.json({ items: [], error: 'Detection failed' }, { status: 500 });
   }
 }
