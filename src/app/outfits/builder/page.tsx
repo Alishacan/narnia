@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useClothingItems } from '@/hooks/useClothingItems';
 import { useOutfits } from '@/hooks/useOutfits';
+import { useToast } from '@/lib/toast-context';
 import {
   ClothingItem,
   ClothingCategory,
@@ -35,6 +36,7 @@ function OutfitBuilderContent() {
   const searchParams = useSearchParams();
   const { items, loading: itemsLoading } = useClothingItems();
   const { createOutfit } = useOutfits();
+  const { showToast } = useToast();
 
   const [selectedItems, setSelectedItems] = useState<Map<string, ClothingItem>>(new Map());
   const [activeCategory, setActiveCategory] = useState<ClothingCategory>('tops');
@@ -75,17 +77,22 @@ function OutfitBuilderContent() {
     setSaving(true);
 
     const name = outfitName.trim() || `Outfit ${new Date().toLocaleDateString()}`;
-    await createOutfit(
+    const result = await createOutfit(
       name,
       Array.from(selectedItems.keys()),
       occasion || undefined,
       season || undefined
     );
 
-    router.push('/outfits');
+    if (result) {
+      router.push('/outfits');
+    } else {
+      showToast('Could not save outfit. Try again.', 'error');
+      setSaving(false);
+    }
   };
 
-  const categoryItems = items.filter((i) => i.category === activeCategory && !i.in_laundry);
+  const categoryItems = items.filter((i) => i.category === activeCategory && !i.in_laundry && !i.is_wishlist);
 
   if (authLoading) return null;
 
@@ -94,7 +101,7 @@ function OutfitBuilderContent() {
       {/* Header */}
       <div className="bg-white/90 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-100 px-4 py-3">
         <div className="flex items-center justify-between">
-          <button onClick={() => router.back()} className="text-gray-400 p-1">
+          <button onClick={() => router.back()} className="text-gray-400 p-1" aria-label="Go back">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
@@ -210,11 +217,16 @@ function OutfitBuilderContent() {
                 <button
                   key={item.id}
                   onClick={() => toggleItem(item)}
-                  className={`aspect-square rounded-xl overflow-hidden border-2 transition ${
-                    isSelected ? 'border-clossie-500 ring-2 ring-clossie-200' : 'border-gray-100'
+                  className={`relative aspect-square rounded-xl overflow-hidden border-2 transition ${
+                    isSelected ? 'border-clossie-500 ring-2 ring-clossie-200' : item.is_wishlist ? 'border-dashed border-clossie-300 opacity-70' : 'border-gray-100'
                   }`}
                 >
                   <img src={item.image_url} alt={item.category} className="w-full h-full object-contain bg-white" />
+                  {item.is_wishlist && (
+                    <div className="absolute top-0.5 left-0.5 bg-clossie-100 text-clossie-600 text-[8px] px-1 py-0.5 rounded font-medium leading-none">
+                      Want
+                    </div>
+                  )}
                 </button>
               );
             })}

@@ -59,6 +59,19 @@ export default function ItemDetailPage() {
     if (data) { setItem(data as ClothingItem); showToast(data.in_laundry ? 'Marked as in laundry 🧺' : 'Removed from laundry', 'info'); }
   };
 
+  const convertToOwned = async () => {
+    if (!item || !user) return;
+    const { data, error } = await supabase
+      .from('clothing_items')
+      .update({ is_wishlist: false })
+      .eq('id', item.id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+    if (error) { showToast('Could not update item.', 'error'); return; }
+    if (data) { setItem(data as ClothingItem); showToast('Moved to your closet!', 'success'); }
+  };
+
   const handleDelete = async () => {
     if (!item || !user) return;
     const { error } = await supabase.from('clothing_items').delete().eq('id', item.id).eq('user_id', user.id);
@@ -138,6 +151,18 @@ export default function ItemDetailPage() {
           Style This
         </button>
       </div>
+
+      {/* KAN-27: Convert wishlist item to owned */}
+      {item.is_wishlist && (
+        <div className="px-4 py-2">
+          <button
+            onClick={convertToOwned}
+            className="w-full py-3 bg-green-600 text-white rounded-2xl text-sm font-semibold active:scale-[0.98] transition"
+          >
+            I Got It! Move to My Closet
+          </button>
+        </div>
+      )}
 
       {/* Details */}
       <div className="px-4 space-y-3 mt-2">

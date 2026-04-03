@@ -38,7 +38,7 @@ function PillSelect({ options, value, onChange }: { options: string[]; value: st
 }
 
 export default function SettingsPage() {
-  const { user, loading: authLoading, signOut, updateProfile, updatePreferences, getPreferences } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
   const [editingName, setEditingName] = useState(false);
@@ -54,40 +54,36 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!authLoading && !user) { router.replace('/login'); return; }
     if (!user) return;
-    const p = getPreferences();
-    setDarkMode(p.dark_mode ?? false);
-    setCompactGrid(p.compact_grid ?? false);
-    setDefaultSeason(p.default_season ?? 'Auto');
-    setDefaultOccasion(p.default_occasion ?? 'Casual');
-    setSuggestionStyle(p.suggestion_style ?? 'Classic');
     setNameInput(user.user_metadata?.full_name || '');
     setDarkMode(localStorage.getItem('clossie-dark') === 'true');
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setCompactGrid(localStorage.getItem('clossie-compact') === 'true');
+    setDefaultSeason(localStorage.getItem('clossie-season') || 'Auto');
+    setDefaultOccasion(localStorage.getItem('clossie-occasion') || 'Casual');
+    setSuggestionStyle(localStorage.getItem('clossie-style') || 'Classic');
   }, [user, authLoading, router]);
 
   const handleSignOut = async () => { await signOut(); router.replace('/login'); };
   const handleSaveName = async () => {
     if (!nameInput.trim()) return;
-    const { error } = await updateProfile({ full_name: nameInput.trim() });
-    if (error) { showToast(error, 'error'); return; }
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ data: { full_name: nameInput.trim() } });
+    if (error) { showToast(error.message, 'error'); return; }
     showToast('Name updated', 'success');
     setEditingName(false);
   };
-  const toggleDarkMode = useCallback(async (on: boolean) => {
+  const toggleDarkMode = useCallback((on: boolean) => {
     setDarkMode(on);
     document.documentElement.classList.toggle('dark', on);
     localStorage.setItem('clossie-dark', String(on));
-    await updatePreferences({ dark_mode: on });
-  }, [updatePreferences]);
-  const toggleCompactGrid = useCallback(async (on: boolean) => {
+  }, []);
+  const toggleCompactGrid = useCallback((on: boolean) => {
     setCompactGrid(on);
     localStorage.setItem('clossie-compact', String(on));
-    await updatePreferences({ compact_grid: on });
-  }, [updatePreferences]);
-  const savePref = useCallback(async (key: string, value: string, setter: (v: string) => void) => {
+  }, []);
+  const savePref = useCallback((key: string, value: string, setter: (v: string) => void) => {
     setter(value);
-    await updatePreferences({ [key]: value });
-  }, [updatePreferences]);
+    localStorage.setItem(`clossie-${key}`, value);
+  }, []);
   const handleExportData = async () => {
     if (!user) return;
     setExporting(true);
@@ -106,8 +102,29 @@ export default function SettingsPage() {
     } catch { showToast('Export failed', 'error'); }
     finally { setExporting(false); }
   };
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const handleDeleteAccount = async () => {
-    showToast('Please email support@clossie.app to delete your account', 'info');
+    if (!user || deleteConfirmText !== 'DELETE') {
+      showToast('Type DELETE to confirm', 'error');
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: 'DELETE' }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      showToast('Account deleted. You have been signed out.', 'success');
+      router.replace('/login');
+    } catch {
+      showToast('Could not delete account. Try again.', 'error');
+      setDeleting(false);
+    }
     setShowDeleteConfirm(false);
   };
 
@@ -196,9 +213,21 @@ export default function SettingsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full space-y-4">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Account?</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">This will permanently delete your account and all your data. This action cannot be undone.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Type <span className="font-mono text-red-500">DELETE</span> to confirm:</p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+              autoFocus
+            />
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium">Cancel</button>
-              <button onClick={handleDeleteAccount} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium">Delete</button>
+              <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }} className="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium">Cancel</button>
+              <button onClick={handleDeleteAccount} disabled={deleteConfirmText !== 'DELETE' || deleting}
+                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium disabled:opacity-40">
+                {deleting ? 'Deleting...' : 'Delete Forever'}
+              </button>
             </div>
           </div>
         </div>

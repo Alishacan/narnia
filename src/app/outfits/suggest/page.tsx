@@ -385,6 +385,16 @@ function SuggestContent() {
             </div>
           ))}
 
+        {/* Shuffle / Regenerate button */}
+        {!loading && hasGenerated && suggestions.length > 0 && (
+          <button
+            onClick={() => handleGenerate()}
+            className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-semibold text-sm active:scale-[0.98] transition shadow-sm"
+          >
+            Shuffle — Show Different Outfits
+          </button>
+        )}
+
         {/* No results after generate */}
         {!loading && hasGenerated && suggestions.length === 0 && !error && (
           <div className="text-center py-10">
@@ -402,7 +412,7 @@ function Header({ onBack }: { onBack: () => void }) {
   return (
     <div className="bg-white/90 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-100 px-4 py-3">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="text-gray-400 p-1">
+        <button onClick={onBack} className="text-gray-400 p-1" aria-label="Go back">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
