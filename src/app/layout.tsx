@@ -43,8 +43,9 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <script src="/theme.js" />
       </head>
-      <body className="min-h-screen bg-gray-50">
+      <body className="min-h-screen bg-gray-50 dark:bg-gray-950 dark:text-gray-100 transition-colors">
         <AuthProvider>
           <ToastProvider>
             <SessionGuard />
