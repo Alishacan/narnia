@@ -100,12 +100,17 @@ export default function ShopCheckPage() {
       occasion: i.occasion,
     }));
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const res = await fetch('/api/ai/shop-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ imageBase64, items: compactItems }),
       });
+      clearTimeout(timeout);
 
       if (!res.ok) throw new Error('Failed');
 
@@ -113,6 +118,7 @@ export default function ShopCheckPage() {
       setResult(data);
       haptics.success();
     } catch {
+      clearTimeout(timeout);
       showToast('Could not analyze. Try again.', 'error');
     } finally {
       setLoading(false);
@@ -148,7 +154,7 @@ export default function ShopCheckPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-32">
       {/* Header */}
       <div className="px-6 pt-12 pb-4">
-        <button onClick={() => router.back()} className="text-gray-400 text-sm mb-2">{'\u2190'} Back</button>
+        <button onClick={() => router.back()} aria-label="Go back" className="text-gray-400 text-sm mb-2">{'\u2190'} Back</button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shop Your Closet First</h1>
         <p className="text-sm text-gray-400 mt-1">Before you buy, let&apos;s check what you already own</p>
       </div>

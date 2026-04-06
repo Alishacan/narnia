@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { haptics } from '@/lib/haptics';
 import { CHALLENGES, BADGES, getChallengeById, getBadgeById, Challenge } from '@/lib/challenges';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase';
 
 interface UserChallenge {
   id: string;
@@ -34,11 +34,6 @@ export default function ChallengesPage() {
   const [badges, setBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
   }, [user, authLoading, router]);
@@ -50,19 +45,25 @@ export default function ChallengesPage() {
   }, [user]);
 
   const loadData = async () => {
+    if (!user) return;
     setLoading(true);
     try {
+      const supabase = createClient();
       const [challengeRes, badgeRes] = await Promise.all([
-        supabase.from('user_challenges').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }),
-        supabase.from('user_badges').select('*').eq('user_id', user!.id).order('earned_at', { ascending: false }),
+        supabase.from('user_challenges').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('user_badges').select('*').eq('user_id', user.id).order('earned_at', { ascending: false }),
       ]);
+
+      if (challengeRes.error || badgeRes.error) {
+        console.error('Challenge load error:', challengeRes.error?.message || badgeRes.error?.message);
+      }
 
       const challenges = (challengeRes.data || []) as UserChallenge[];
       setActiveChallenges(challenges.filter((c) => c.status === 'active'));
       setCompletedChallenges(challenges.filter((c) => c.status === 'completed'));
       setBadges((badgeRes.data || []) as UserBadge[]);
-    } catch {
-      // Tables may not exist yet — show empty state
+    } catch (err) {
+      console.error('Failed to load challenges:', err);
     } finally {
       setLoading(false);
     }
@@ -76,6 +77,7 @@ export default function ChallengesPage() {
     endsAt.setDate(endsAt.getDate() + challenge.duration);
 
     try {
+      const supabase = createClient();
       const { error } = await supabase.from('user_challenges').insert({
         user_id: user.id,
         challenge_id: challenge.id,
@@ -107,7 +109,7 @@ export default function ChallengesPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24">
       {/* Header */}
       <div className="px-6 pt-12 pb-4">
-        <button onClick={() => router.back()} className="text-gray-400 text-sm">{'\u2190'} Back</button>
+        <button onClick={() => router.back()} aria-label="Go back" className="text-gray-400 text-sm">{'\u2190'} Back</button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">Closet Challenges</h1>
         <p className="text-xs text-gray-400 mt-1">Level up your style game</p>
       </div>

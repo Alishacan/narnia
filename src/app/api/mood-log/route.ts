@@ -19,9 +19,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Mood is required' }, { status: 400 });
     }
 
+    const VALID_MOODS = ['powerful', 'cozy', 'main-character', 'professional-badass', 'casual-cool', 'date-night', 'weekend-warrior'];
+    if (!VALID_MOODS.includes(mood)) {
+      return NextResponse.json({ error: 'Invalid mood' }, { status: 400 });
+    }
+
     const { error } = await supabase
       .from('mood_log')
-      .insert({ user_id: user.id, mood: mood.slice(0, 50) });
+      .insert({ user_id: user.id, mood });
 
     if (error) {
       // Table may not exist yet — fail silently for non-critical logging

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { MOODS } from '@/lib/moods';
+
+const moodPromptHints: Record<string, string> = Object.fromEntries(
+  MOODS.map((m) => [m.id, m.promptHint])
+);
 
 interface CompactItem {
   id: string;
@@ -72,17 +77,7 @@ Rules:
     rules += `\n- IMPORTANT: At least one outfit MUST include the item with id "${sanitize(filters.mustIncludeItemId)}". Build the other items around it to create a complete look.`;
   }
   if (filters.mood) {
-    // Import mood hints dynamically to keep this file self-contained
-    const moodHints: Record<string, string> = {
-      powerful: 'Use bold, saturated colors (reds, blacks, deep jewel tones). Prefer structured silhouettes — blazers, tailored pants, clean lines. Include one statement piece. The outfit should communicate confidence and authority.',
-      cozy: 'Use warm, soft tones (cream, camel, blush, soft gray). Prefer oversized or relaxed fits — chunky knits, wide pants, layered textures. Prioritize comfort without looking sloppy.',
-      'main-character': 'Go bold with high contrast and unexpected combinations. Include at least one standout statement piece. Mix patterns or textures. The outfit should look curated and intentional, like the protagonist of a movie.',
-      'professional-badass': 'Neutral palette (black, white, navy, gray, camel) with clean, tailored lines. Include one unexpected detail — a bold shoe, a textured bag, or a pop of color in an accessory. The look should be office-appropriate but with edge.',
-      'casual-cool': 'Relaxed, tonal dressing. Stick to 2-3 colors in the same family. Prefer relaxed but intentional fits. Minimal accessories. The outfit should look like you put it together in 5 minutes but it looks amazing.',
-      'date-night': 'Use rich, romantic colors (deep reds, burgundy, emerald, black). Prefer flattering silhouettes that define the shape. Include intentional details — nice jewelry, a special bag, or a textured top. The look should feel special and confident.',
-      'weekend-warrior': 'Comfortable but put-together layers. Versatile pieces that work for errands, brunch, or a spontaneous adventure. Practical footwear. The outfit should be easy to move in while still looking good.',
-    };
-    const hint = moodHints[sanitize(filters.mood)] || '';
+    const hint = moodPromptHints[sanitize(filters.mood)] || '';
     if (hint) {
       rules += `\n\nMOOD CONTEXT: The user wants to feel "${sanitize(filters.mood)}" today. Style rules for this mood:\n${hint}\nPrioritize these styling rules when selecting items and building outfits.`;
     }

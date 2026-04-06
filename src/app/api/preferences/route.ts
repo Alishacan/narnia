@@ -16,16 +16,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { chosen_item_ids, rejected_item_ids, chosen_colors, rejected_colors, chosen_categories, rejected_categories } = body;
 
+    // Validate all array fields: must be arrays of strings, max 50 entries each
+    const validateArray = (val: unknown): string[] => {
+      if (!Array.isArray(val)) return [];
+      return val.filter((v): v is string => typeof v === 'string' && v.length <= 100).slice(0, 50);
+    };
+
     const { error } = await supabase
       .from('outfit_preferences')
       .insert({
         user_id: user.id,
-        chosen_item_ids: chosen_item_ids || [],
-        rejected_item_ids: rejected_item_ids || [],
-        chosen_colors: chosen_colors || [],
-        rejected_colors: rejected_colors || [],
-        chosen_categories: chosen_categories || [],
-        rejected_categories: rejected_categories || [],
+        chosen_item_ids: validateArray(chosen_item_ids),
+        rejected_item_ids: validateArray(rejected_item_ids),
+        chosen_colors: validateArray(chosen_colors),
+        rejected_colors: validateArray(rejected_colors),
+        chosen_categories: validateArray(chosen_categories),
+        rejected_categories: validateArray(rejected_categories),
       });
 
     if (error) {

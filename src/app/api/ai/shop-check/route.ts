@@ -74,6 +74,9 @@ export async function POST(request: NextRequest) {
     if (!imageBase64 || typeof imageBase64 !== 'string') {
       return NextResponse.json({ error: 'Image is required' }, { status: 400 });
     }
+    if (imageBase64.length > 10_000_000) {
+      return NextResponse.json({ error: 'Image too large (max ~7MB)' }, { status: 413 });
+    }
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No wardrobe items provided' }, { status: 400 });
     }

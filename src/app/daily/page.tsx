@@ -14,6 +14,7 @@ import {
   CATEGORY_LABELS,
 } from '@/lib/types';
 import { MOODS, getRandomMood, Mood } from '@/lib/moods';
+import { getSeasonFromMonth } from '@/lib/date-utils';
 import Link from 'next/link';
 
 const GREETINGS = [
@@ -29,14 +30,6 @@ function getGreeting(): string {
     if (h >= GREETINGS[i].hour) return GREETINGS[i].text;
   }
   return GREETINGS[0].text;
-}
-
-function getSeasonFromMonth(): string {
-  const m = new Date().getMonth();
-  if (m >= 2 && m <= 4) return 'spring';
-  if (m >= 5 && m <= 7) return 'summer';
-  if (m >= 8 && m <= 10) return 'fall';
-  return 'winter';
 }
 
 const DAILY_MESSAGES = [
@@ -115,7 +108,7 @@ function DailyContent() {
     handleGenerate(randomMood);
   };
 
-  const handleGenerate = async (mood?: Mood, signal?: AbortSignal) => {
+  const handleGenerate = async (mood?: Mood) => {
     setLoading(true);
     setError('');
     setOutfit(null);
@@ -139,6 +132,9 @@ function DailyContent() {
       is_favorite: i.is_favorite,
     }));
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const res = await fetch('/api/ai/suggest-outfits', {
         method: 'POST',
@@ -150,9 +146,10 @@ function DailyContent() {
           mood: mood?.id,
           count: 1,
         }),
-        signal,
+        signal: controller.signal,
       });
 
+      clearTimeout(timeout);
       if (!res.ok) throw new Error('Failed');
 
       const data = await res.json();
@@ -172,7 +169,6 @@ function DailyContent() {
         setError('Could not build an outfit. Try a different mood!');
       } else {
         setOutfit(resolved[0]);
-        // Log mood selection
         if (mood) {
           fetch('/api/mood-log', {
             method: 'POST',
@@ -182,6 +178,7 @@ function DailyContent() {
         }
       }
     } catch {
+      clearTimeout(timeout);
       setError('Something went wrong. Check your connection and try again.');
     } finally {
       setLoading(false);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useClothingItems } from '@/hooks/useClothingItems';
@@ -12,15 +12,8 @@ import {
   CATEGORY_ICONS,
   CATEGORY_LABELS,
 } from '@/lib/types';
+import { getSeasonFromMonth } from '@/lib/date-utils';
 import Link from 'next/link';
-
-function getSeasonFromMonth(): string {
-  const m = new Date().getMonth();
-  if (m >= 2 && m <= 4) return 'spring';
-  if (m >= 5 && m <= 7) return 'summer';
-  if (m >= 8 && m <= 10) return 'fall';
-  return 'winter';
-}
 
 const DUEL_MESSAGES = [
   'Crafting two looks...',
@@ -63,8 +56,18 @@ function DuelsContent() {
   const [loadingMsg, setLoadingMsg] = useState(DUEL_MESSAGES[0]);
   const [chosen, setChosen] = useState<0 | 1 | null>(null);
   const [duelCount, setDuelCount] = useState(0);
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
   const currentSeason = getSeasonFromMonth();
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace('/login');
@@ -90,7 +93,8 @@ function DuelsContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsLoading]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
+    if (loading) return;
     setLoading(true);
     setOutfits(null);
     setChosen(null);
@@ -114,10 +118,14 @@ function DuelsContent() {
       is_favorite: i.is_favorite,
     }));
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
     try {
       const res = await fetch('/api/ai/suggest-outfits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           items: compactItems,
           season: currentSeason,
@@ -148,17 +156,22 @@ function DuelsContent() {
         })
         .filter((s) => s.items.length >= 2);
 
+      clearTimeout(timeout);
+      if (!mountedRef.current) return;
       if (resolved.length >= 2) {
         setOutfits([resolved[0], resolved[1]]);
       } else {
         showToast('Need more variety in your closet for a duel!', 'info');
       }
     } catch {
+      clearTimeout(timeout);
+      if (!mountedRef.current) return;
       showToast('Could not generate duel. Try again.', 'error');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, availableItems, currentSeason, items, showToast]);
 
   const handleChoose = async (index: 0 | 1) => {
     if (!outfits || chosen !== null) return;
@@ -184,7 +197,9 @@ function DuelsContent() {
     }).catch(() => {});
 
     // Load next duel after a brief pause
-    setTimeout(() => handleGenerate(), 1200);
+    autoAdvanceRef.current = setTimeout(() => {
+      if (mountedRef.current) handleGenerate();
+    }, 1200);
   };
 
   if (authLoading) return null;
@@ -193,7 +208,7 @@ function DuelsContent() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         <div className="px-6 pt-12 pb-4">
-          <button onClick={() => router.back()} className="text-gray-400 text-sm">{'\u2190'} Back</button>
+          <button onClick={() => router.back()} aria-label="Go back" className="text-gray-400 text-sm">{'\u2190'} Back</button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-2">Outfit Duels</h1>
         </div>
         <div className="flex flex-col items-center justify-center py-16 px-6">
@@ -214,7 +229,7 @@ function DuelsContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24">
       {/* Header */}
       <div className="px-6 pt-12 pb-2">
-        <button onClick={() => router.back()} className="text-gray-400 text-sm">{'\u2190'} Back</button>
+        <button onClick={() => router.back()} aria-label="Go back" className="text-gray-400 text-sm">{'\u2190'} Back</button>
         <div className="flex items-center justify-between mt-2">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Outfit Duels</h1>
           {duelCount > 0 && (
@@ -251,6 +266,7 @@ function DuelsContent() {
                   key={idx}
                   onClick={() => handleChoose(idx as 0 | 1)}
                   disabled={chosen !== null}
+                  aria-label={`Choose outfit: ${outfit.name}`}
                   className={`w-full bg-white dark:bg-gray-900 rounded-2xl shadow-sm border p-4 text-left transition-all duration-300 ${
                     isChosen
                       ? 'border-clossie-400 scale-[1.02] shadow-md ring-2 ring-clossie-200'
@@ -286,9 +302,10 @@ function DuelsContent() {
                     {outfit.colors.map((color, ci) => (
                       <div
                         key={ci}
+                        role="img"
+                        aria-label={color}
                         className="w-4 h-4 rounded-full border border-gray-200 dark:border-gray-600"
                         style={{ backgroundColor: color }}
-                        title={color}
                       />
                     ))}
                   </div>
