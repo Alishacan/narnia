@@ -6,26 +6,25 @@ const VALID_CATEGORIES = ['tops','bottoms','dresses','outerwear','shoes','bags',
 const VALID_SEASONS = ['spring','summer','fall','winter','all-season'];
 const VALID_OCCASIONS = ['casual','work','going-out','formal','athletic','lounge'];
 
-const PROMPT = `You are an expert fashion categorization AI. Analyze the clothing item in the image carefully.
+const PROMPT = `Categorize this clothing item. Return a JSON object with EXACTLY these fields using ONLY the allowed values listed below.
 
-The image may be a cropped section from a larger photo, so the item may be partially visible or on a person's body. Focus on identifying WHAT the item IS, not the background or the person.
+ALLOWED VALUES:
+- "category": MUST be one of: "tops", "bottoms", "dresses", "outerwear", "shoes", "bags", "accessories", "jewelry", "activewear", "other"
+- "subcategory": specific type like "hawaiian shirt", "cargo shorts", "midi skirt", "bomber jacket", "crossbody bag"
+- "color": CSS color name like "black", "navy", "coral", "olive", "cream", "khaki", "beige"
+- "secondary_color": second color or null
+- "season": MUST be one of: "spring", "summer", "fall", "winter", "all-season"
+- "occasion": MUST be one of: "casual", "work", "going-out", "formal", "athletic", "lounge"
 
-Return a JSON object with these fields:
-- category: one of "tops", "bottoms", "dresses", "outerwear", "shoes", "bags", "accessories", "jewelry", "activewear", "other"
-- subcategory: be SPECIFIC — e.g., "crop top", "high-waisted jeans", "platform sneakers", "crossbody bag", "stud earrings", "midi skirt", "bomber jacket"
-- color: the ACTUAL color of the clothing item as a CSS color name (e.g., "black", "navy", "coral", "olive", "cream"). Use hex only if the color is unusual.
-- secondary_color: secondary color if the item has a pattern, print, or is two-toned. Otherwise null.
-- season: one of "spring", "summer", "fall", "winter", "all-season" — based on fabric weight, coverage, and typical usage
-- occasion: one of "casual", "work", "going-out", "formal", "athletic", "lounge" — based on style, material, and formality
+EXAMPLES:
+A blue t-shirt: {"category":"tops","subcategory":"t-shirt","color":"blue","secondary_color":null,"season":"summer","occasion":"casual"}
+Black jeans: {"category":"bottoms","subcategory":"jeans","color":"black","secondary_color":null,"season":"all-season","occasion":"casual"}
+Red cocktail dress: {"category":"dresses","subcategory":"cocktail dress","color":"red","secondary_color":null,"season":"all-season","occasion":"going-out"}
 
-IMPORTANT: Never return "other" as category unless the item truly cannot be classified. A tank top is "tops", cowboy boots are "shoes", a belt is "accessories", etc.
-
-Return ONLY the JSON object, no other text.`;
+If you see multiple items, categorize the MOST PROMINENT clothing item.
+DO NOT invent category names. Use ONLY the values listed above.`;
 
 export async function POST(request: NextRequest) {
-  const geminiKey = process.env.GEMINI_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
-
   // Auth check
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -46,35 +45,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Image too large' }, { status: 413 });
     }
 
-    let content: string | null = null;
-
-    // Try Gemini first (cheapest), fall back to OpenAI
-    if (geminiKey) {
-      content = await callGemini(geminiKey, imageBase64);
-    } else if (openaiKey) {
-      content = await callOpenAI(openaiKey, imageBase64);
-    } else {
-      return NextResponse.json({ error: 'No AI API key configured' }, { status: 500 });
+    // Use Ollama (free, local, no rate limits)
+    const raw = await callOllama(imageBase64);
+    if (!raw) {
+      return NextResponse.json({ error: 'Ollama not running — start it with: brew services start ollama' }, { status: 500 });
     }
-
-    if (!content) {
-      return NextResponse.json({ error: 'No response from AI' }, { status: 500 });
-    }
-
-    // Parse JSON from the response (handle markdown code blocks)
-    const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const raw = JSON.parse(jsonStr);
 
     // Validate AI output — clamp to known values
     const categorization = {
-      category: VALID_CATEGORIES.includes(raw.category) ? raw.category : 'other',
+      category: VALID_CATEGORIES.includes(raw.category as string) ? raw.category : 'other',
       subcategory: typeof raw.subcategory === 'string' ? raw.subcategory.slice(0, 100) : null,
       color: typeof raw.color === 'string' ? raw.color.slice(0, 30) : '#808080',
       secondary_color: typeof raw.secondary_color === 'string' ? raw.secondary_color.slice(0, 30) : null,
-      season: VALID_SEASONS.includes(raw.season) ? raw.season : 'all-season',
-      occasion: VALID_OCCASIONS.includes(raw.occasion) ? raw.occasion : 'casual',
+      season: VALID_SEASONS.includes(raw.season as string) ? raw.season : 'all-season',
+      occasion: VALID_OCCASIONS.includes(raw.occasion as string) ? raw.occasion : 'casual',
     };
 
+    console.log('[Categorize] Result:', JSON.stringify(categorization));
     return NextResponse.json(categorization);
   } catch (error) {
     console.error('AI categorization error:', error);
@@ -82,73 +69,81 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function callGemini(apiKey: string, imageBase64: string): Promise<string | null> {
+/**
+ * Parse a JSON string robustly — handles markdown fences, single quotes,
+ * unquoted keys, trailing commas, comments, and preamble text.
+ */
+function parseJsonRobust(content: string): Record<string, unknown> | null {
+  let s = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const jsonMatch = s.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  s = jsonMatch[0];
+  s = s.replace(/\/\/[^\n]*/g, '');
+  s = s.replace(/,\s*([}\]])/g, '$1');
+  s = s.replace(/'/g, '"');
+  s = s.replace(/(\{|,)\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":');
+
+  try {
+    return JSON.parse(s);
+  } catch {
+    console.error('[Categorize] Failed to parse cleaned JSON:', s.substring(0, 300));
+    return null;
+  }
+}
+
+/**
+ * Call Llama 3.2 Vision 11B via Ollama (local, free, no rate limits).
+ * Runs on the user's M3 Pro MacBook Pro.
+ */
+async function callOllama(imageBase64: string): Promise<Record<string, unknown> | null> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    {
+  const timeout = setTimeout(() => controller.abort(), 60000); // 60s for local model
+  try {
+    const response = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: PROMPT + '\n\nCategorize this clothing item.' },
-              {
-                inline_data: {
-                  mime_type: 'image/png',
-                  data: imageBase64,
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
+        model: 'llama3.2-vision:11b',
+        prompt: PROMPT + '\n\nCategorize this clothing item.',
+        images: [imageBase64],
+        stream: false,
+        format: 'json',
+        options: {
           temperature: 0.1,
-          maxOutputTokens: 200,
+          num_predict: 300,
         },
       }),
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.error('[Categorize] Ollama HTTP error:', response.status);
+      return null;
     }
-  );
-  clearTimeout(timeout);
 
-  const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
-}
+    const data = await response.json();
+    const text = data.response;
+    if (!text) {
+      console.error('[Categorize] Ollama returned no response');
+      return null;
+    }
 
-async function callOpenAI(apiKey: string, imageBase64: string): Promise<string | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    signal: controller.signal,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: PROMPT },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: { url: `data:image/png;base64,${imageBase64}`, detail: 'low' },
-            },
-            { type: 'text', text: 'Categorize this clothing item.' },
-          ],
-        },
-      ],
-      max_tokens: 200,
-      temperature: 0.1,
-    }),
-  });
-  clearTimeout(timeout);
+    console.log('[Categorize] Ollama raw:', text.substring(0, 300));
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content ?? null;
+    // Ollama with format:'json' should return clean JSON, but parse robustly
+    try {
+      return JSON.parse(text);
+    } catch {
+      return parseJsonRobust(text);
+    }
+  } catch (err) {
+    clearTimeout(timeout);
+    if ((err as Error).name === 'AbortError') {
+      console.error('[Categorize] Ollama timed out after 60s');
+    } else {
+      console.error('[Categorize] Ollama not available:', (err as Error).message);
+    }
+    return null;
+  }
 }
